@@ -9,7 +9,7 @@ package com.max77.exactfarmingtest.location;
  * Filters incoming location according to maximum horizontal
  * accuracy and the displacement from the previous accepted location
  */
-public final class AccuracyAndDisplacementBasedLocationFilter implements LocationFilter {
+public final class AccuracyAndDisplacementBasedLocationFilter implements ILocationFilter {
     private final double mMaxAccuracy;
     private final double mMinDisplacement;
 

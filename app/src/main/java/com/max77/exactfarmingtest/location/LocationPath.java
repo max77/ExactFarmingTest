@@ -1,4 +1,4 @@
-package com.max77.exactfarmingtest.area;
+package com.max77.exactfarmingtest.location;
 
 import com.max77.exactfarmingtest.location.LocationInfo;
 import com.max77.exactfarmingtest.location.LocationUtil;
@@ -12,12 +12,12 @@ import java.util.List;
  * Created by max77 on 20180130.
  */
 
-public final class GPSPath {
+public final class LocationPath {
     private double mPathClosureThreshold;
     private int[] mIntersectionPointsIdx;
     private List<LocationInfo> mPoints = new ArrayList<>();
 
-    public GPSPath(double pathClosureThreshold) {
+    public LocationPath(double pathClosureThreshold) {
         if (pathClosureThreshold <= 0)
             throw new IllegalArgumentException("Closure threshold must be positive!");
 
@@ -54,7 +54,7 @@ public final class GPSPath {
     }
 
     public void addPoint(LocationInfo newPoint) {
-        if (size() >= 3) {
+        if (size() >= 3 && mIntersectionPointsIdx == null) {
             LocationInfo lastPoint = mPoints.get(size() - 1);
             LocationInfo intersectionPoint = null;
 
@@ -93,5 +93,11 @@ public final class GPSPath {
         }
 
         mPoints.add(newPoint);
+    }
+
+    public void removeTailAfterIntersection() {
+        List<LocationInfo> newPoints = mPoints.subList(0, mIntersectionPointsIdx[1]);
+        mPoints = newPoints;
+        mIntersectionPointsIdx = null;
     }
 }

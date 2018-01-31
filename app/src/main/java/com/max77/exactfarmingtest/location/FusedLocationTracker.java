@@ -7,7 +7,6 @@ package com.max77.exactfarmingtest.location;
 
 import android.content.Context;
 import android.location.Location;
-import android.os.Looper;
 import android.util.Log;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -21,11 +20,12 @@ import com.max77.exactfarmingtest.BuildConfig;
 /**
  * Attempts to get GPS coordinates periodically
  */
-public abstract class PeriodicGPSLocationTracker implements LocationTracker {
-    private static final String TAG = BuildConfig.TAG + PeriodicGPSLocationTracker.class.getSimpleName();
+public final class FusedLocationTracker implements ILocationTracker {
+    private static final String TAG = BuildConfig.TAG + FusedLocationTracker.class.getSimpleName();
 
-    private final long mApproxTrackingPeriod;
+    private final long mApproxSamplingPeriod;
 
+    private Listener mListener;
     private boolean isStarted;
     private final LocationRequest mLocationRequest;
     private FusedLocationProviderClient mFusedLocationClient;
@@ -38,7 +38,9 @@ public abstract class PeriodicGPSLocationTracker implements LocationTracker {
 
             if (lastLoc != null) {
                 Log.i(TAG, "new location received: " + lastLoc);
-                onNewLocation(LocationUtil.locationInfoFromLocation(lastLoc));
+                if (mListener != null) {
+                    mListener.onNewLocation(LocationUtil.locationInfoFromLocation(lastLoc));
+                }
             } else {
                 Log.w(TAG, "NULL location received");
             }
@@ -48,18 +50,20 @@ public abstract class PeriodicGPSLocationTracker implements LocationTracker {
         public void onLocationAvailability(LocationAvailability locationAvailability) {
             super.onLocationAvailability(locationAvailability);
             if (!locationAvailability.isLocationAvailable()) {
-                stopTracking();
-                onLocationNotAvailable();
+                destroy();
+                if (mListener != null) {
+                    mListener.onLocationNotAvailable();
+                }
             }
         }
     };
 
-    public PeriodicGPSLocationTracker(Context context, long approxTrackingPeriod) {
-        mApproxTrackingPeriod = approxTrackingPeriod;
+    public FusedLocationTracker(Context context, long approxSamplingPeriod) {
+        mApproxSamplingPeriod = approxSamplingPeriod;
 
         mLocationRequest = new LocationRequest();
-        mLocationRequest.setInterval(mApproxTrackingPeriod);
-        mLocationRequest.setFastestInterval(mApproxTrackingPeriod);
+        mLocationRequest.setInterval(mApproxSamplingPeriod);
+        mLocationRequest.setFastestInterval(mApproxSamplingPeriod);
         mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(context);
@@ -68,30 +72,41 @@ public abstract class PeriodicGPSLocationTracker implements LocationTracker {
     @Override
     public final void startTracking() throws SecurityException {
         checkForBeingReused();
-        if (isStarted)
+
+        if (isStarted) {
             return;
+        }
 
         isStarted = true;
-        mFusedLocationClient.requestLocationUpdates(mLocationRequest, mLocationCallback, Looper.myLooper());
+        mFusedLocationClient.removeLocationUpdates(mLocationCallback);
+        mFusedLocationClient.requestLocationUpdates(mLocationRequest, mLocationCallback, null);
         Log.i(TAG, "Starting tracking approx. every " + mLocationRequest.getInterval() + "ms");
     }
 
-
     @Override
-    public final void stopTracking() {
+    public final void destroy() {
         checkForBeingReused();
-        if (!isStarted)
+
+        if (!isStarted) {
             return;
+        }
+
+        isStarted = false;
 
         mFusedLocationClient.removeLocationUpdates(mLocationCallback);
         mFusedLocationClient = null;
-        Log.i(TAG, "Stopped tracking");
+        mListener = null;
 
-        isStarted = false;
+        Log.i(TAG, "destroyed");
+    }
+
+    @Override
+    public void setListener(Listener listener) {
+        mListener = listener;
     }
 
     private void checkForBeingReused() {
         if (mFusedLocationClient == null)
-            throw new IllegalStateException("PeriodicGPSLocationTracker can not be reused!");
+            throw new IllegalStateException("FusedLocationTracker can not be reused!");
     }
 }

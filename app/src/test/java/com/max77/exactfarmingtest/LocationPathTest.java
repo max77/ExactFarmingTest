@@ -1,6 +1,6 @@
 package com.max77.exactfarmingtest;
 
-import com.max77.exactfarmingtest.area.GPSPath;
+import com.max77.exactfarmingtest.location.LocationPath;
 import com.max77.exactfarmingtest.location.LocationInfo;
 
 import org.junit.Test;
@@ -16,7 +16,7 @@ import static org.junit.Assert.assertTrue;
  *
  * @see <a href="http://d.android.com/tools/testing">Testing documentation</a>
  */
-public class GPSPathTest {
+public class LocationPathTest {
     private void assertLatLonTime(LocationInfo locationInfo, double lat, double lon, long time) {
         assertEquals(locationInfo.getLatitude(), lat, 1e-8);
         assertEquals(locationInfo.getLongitude(), lon, 1e-8);
@@ -25,7 +25,7 @@ public class GPSPathTest {
 
     @Test
     public void shortPathCorrect() {
-        GPSPath path = new GPSPath(0.5f);
+        LocationPath path = new LocationPath(0.5f);
 
         assertEquals(path.size(), 0);
         assertFalse(path.hasSelfIntersection());
@@ -52,7 +52,7 @@ public class GPSPathTest {
 
     @Test
     public void longOpenPathCorrect() {
-        GPSPath path = new GPSPath(0.5f);
+        LocationPath path = new LocationPath(0.5f);
 
         for (int i = 0; i < 10; i++)
             path.addPoint(LocationInfo.of(i, i));
@@ -66,7 +66,7 @@ public class GPSPathTest {
 
     @Test
     public void closedPathCorrect() {
-        GPSPath path = new GPSPath(0.5f);
+        LocationPath path = new LocationPath(0.5f);
 
         path.addPoint(LocationInfo.of(0, 0).setTime(1));
         path.addPoint(LocationInfo.of(2, 0).setTime(2));
@@ -87,7 +87,7 @@ public class GPSPathTest {
 
     @Test
     public void selfIntersection1Correct() {
-        GPSPath path = new GPSPath(0.5f);
+        LocationPath path = new LocationPath(0.5f);
 
         path.addPoint(LocationInfo.of(0, 0).setTime(10));
         path.addPoint(LocationInfo.of(2, 0).setTime(20));

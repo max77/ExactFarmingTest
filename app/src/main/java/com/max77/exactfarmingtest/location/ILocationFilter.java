@@ -5,6 +5,6 @@ package com.max77.exactfarmingtest.location;
  * Created by max77 on 20180130.
  */
 
-public interface LocationFilter {
+public interface ILocationFilter {
     boolean filter(LocationInfo location);
 }

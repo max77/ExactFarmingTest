@@ -81,10 +81,12 @@ public final class LocationInfo {
     }
 
     public static LocationInfo of(LocationInfo other) {
-        return new LocationInfo()
-                .setLatitude(other.latitude)
-                .setLongitude(other.longitude)
-                .setAccuracy(other.accuracy)
-                .setTime(other.time);
+        return other != null ?
+                new LocationInfo()
+                        .setLatitude(other.latitude)
+                        .setLongitude(other.longitude)
+                        .setAccuracy(other.accuracy)
+                        .setTime(other.time) :
+                null;
     }
 }
