@@ -89,4 +89,14 @@ public final class LocationInfo {
                         .setTime(other.time) :
                 null;
     }
+
+    @Override
+    public String toString() {
+        return "LocationInfo{" +
+                "latitude=" + latitude +
+                ", longitude=" + longitude +
+                ", accuracy=" + accuracy +
+                ", time=" + time +
+                '}';
+    }
 }

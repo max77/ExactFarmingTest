@@ -6,5 +6,5 @@ package com.max77.exactfarmingtest.location;
  */
 
 public interface ILocationFilter {
-    boolean filter(LocationInfo location);
+    boolean isValidLocation(LocationInfo location);
 }

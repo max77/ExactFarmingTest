@@ -26,6 +26,18 @@ public final class LocationUtil {
         return new LatLng(locationInfo.getLatitude(), locationInfo.getLongitude());
     }
 
+    public static List<LatLng> locationInfoListToLatLngList(List<LocationInfo> locationInfos) {
+        List<LatLng> result = new ArrayList<>();
+
+        if (locationInfos != null) {
+            for (LocationInfo locationInfo : locationInfos) {
+                result.add(locationInfoToLatLng(locationInfo));
+            }
+        }
+
+        return result;
+    }
+
     public static double distanceBetween(LocationInfo l1, LocationInfo l2) {
         return SphericalUtil.computeDistanceBetween(locationInfoToLatLng(l1), locationInfoToLatLng(l2));
     }
@@ -52,14 +64,5 @@ public final class LocationUtil {
         }
 
         return null;
-    }
-
-    public static double area(List<LocationInfo> points) {
-        List<LatLng> latLngPoints = new ArrayList<>();
-        for (LocationInfo point : points) {
-            latLngPoints.add(locationInfoToLatLng(point));
-        }
-
-        return SphericalUtil.computeArea(latLngPoints);
     }
 }

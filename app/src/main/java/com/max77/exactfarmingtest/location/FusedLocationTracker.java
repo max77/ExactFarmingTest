@@ -49,8 +49,11 @@ public final class FusedLocationTracker implements ILocationTracker {
         @Override
         public void onLocationAvailability(LocationAvailability locationAvailability) {
             super.onLocationAvailability(locationAvailability);
+
             if (!locationAvailability.isLocationAvailable()) {
-                destroy();
+                Log.w(TAG, "location not available");
+
+                stopTracking();
                 if (mListener != null) {
                     mListener.onLocationNotAvailable();
                 }
@@ -66,13 +69,11 @@ public final class FusedLocationTracker implements ILocationTracker {
         mLocationRequest.setFastestInterval(mApproxSamplingPeriod);
         mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
-        mFusedLocationClient = LocationServices.getFusedLocationProviderClient(context);
+        mFusedLocationClient = LocationServices.getFusedLocationProviderClient(context.getApplicationContext());
     }
 
     @Override
     public final void startTracking() throws SecurityException {
-        checkForBeingReused();
-
         if (isStarted) {
             return;
         }
@@ -84,9 +85,7 @@ public final class FusedLocationTracker implements ILocationTracker {
     }
 
     @Override
-    public final void destroy() {
-        checkForBeingReused();
-
+    public final void stopTracking() {
         if (!isStarted) {
             return;
         }
@@ -97,16 +96,11 @@ public final class FusedLocationTracker implements ILocationTracker {
         mFusedLocationClient = null;
         mListener = null;
 
-        Log.i(TAG, "destroyed");
+        Log.i(TAG, "tracking stopped");
     }
 
     @Override
     public void setListener(Listener listener) {
         mListener = listener;
-    }
-
-    private void checkForBeingReused() {
-        if (mFusedLocationClient == null)
-            throw new IllegalStateException("FusedLocationTracker can not be reused!");
     }
 }

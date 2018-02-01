@@ -3,4 +3,11 @@
     <color name="colorPrimary">#3F51B5</color>
     <color name="colorPrimaryDark">#303F9F</color>
     <color name="colorAccent">#FF4081</color>
+    <color name="color_button_start">#00A000</color>
+    <color name="color_button_track">#A0F030</color>
+    <color name="color_button_finish">#C0C000</color>
+    <color name="color_button_stop">#C0C000</color>
+    <color name="color_area">#4000FFFF</color>
+    <color name="color_area_warning">#40FF0000</color>
+    <color name="color_path">#80400000</color>
 </resources>

@@ -1,19 +1,26 @@
 package com.max77.exactfarmingtest.ui;
 
 import android.content.Context;
-import android.graphics.Color;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.Circle;
 import com.google.android.gms.maps.model.CircleOptions;
+import com.google.android.gms.maps.model.JointType;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polygon;
+import com.google.android.gms.maps.model.PolygonOptions;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
+import com.google.android.gms.maps.model.RoundCap;
 import com.max77.exactfarmingtest.R;
 import com.max77.exactfarmingtest.location.LocationInfo;
 import com.max77.exactfarmingtest.location.LocationUtil;
+
+import java.util.List;
 
 /**
  * ExactFarmingTest project
@@ -28,32 +35,22 @@ public class MapHelper {
 
     private Marker mMyLocationMarker;
     private Circle mAccuracyCircle;
+    private Polyline mPathPolyline;
+    private Polygon mAreaPolygon;
 
     private double mGoodAccuracy;
-    private double mBadAccuracy;
 
-    private boolean isFirstLocation;
-    private LocationInfo mMyLastLocation;
-
-    public MapHelper(Context context, GoogleMap map) {
+    public MapHelper(Context context, GoogleMap map, double goodAccuracy) {
         mContext = context;
         mMap = map;
+        mGoodAccuracy = goodAccuracy;
     }
 
-    public void setAccuracyRange(double goodAccuracy, double badAccuracy) {
-        mGoodAccuracy = Math.min(goodAccuracy, badAccuracy);
-        mBadAccuracy = Math.max(goodAccuracy, badAccuracy);
-    }
-
-    public void setMyLocation(LocationInfo locationInfo) {
+    public void showMyLocation(LocationInfo locationInfo) {
 
         if (mMap == null) {
             return;
         }
-
-
-        isFirstLocation = mMyLastLocation == null;
-        mMyLastLocation = locationInfo;
 
         LatLng latLng = LocationUtil.locationInfoToLatLng(locationInfo);
 
@@ -64,36 +61,85 @@ public class MapHelper {
                     .icon(BitmapDescriptorFactory.fromBitmap(
                             UIUtil.getBitmapFromVector(mContext, R.drawable.ic_my_location)))
                     .anchor(0.5f, 0.5f));
+        } else {
+            mMyLocationMarker.setPosition(latLng);
         }
-
-        mMyLocationMarker.setPosition(latLng);
 
         if (mAccuracyCircle == null) {
             mAccuracyCircle = mMap.addCircle(new CircleOptions()
                     .center(latLng)
                     .zIndex(2)
                     .strokeWidth(UIUtil.dpToPx(mContext.getResources(), ACCURACY_CIRCLE_STROKE_WIDTH_DP)));
+        } else {
+            mAccuracyCircle.setCenter(latLng);
         }
 
-        mAccuracyCircle.setCenter(latLng);
         mAccuracyCircle.setRadius(locationInfo.getAccuracy());
-        mAccuracyCircle.setFillColor(getColorForAccuracy(64, 1.0f, locationInfo.getAccuracy()));
-        mAccuracyCircle.setStrokeColor(getColorForAccuracy(128, 0.5f, locationInfo.getAccuracy()));
+        mAccuracyCircle.setFillColor(UIUtil.getColorForAccuracy(locationInfo.getAccuracy(), mGoodAccuracy, 64,
+                1.0f));
+        mAccuracyCircle.setStrokeColor(UIUtil.getColorForAccuracy(locationInfo.getAccuracy(), mGoodAccuracy, 128,
+                0.5f));
     }
 
-    private static final int MAX_HUE = 150;
-
-    private int getColorForAccuracy(int alpha, float saturation, double accuracy) {
-        float hue = (float) (MAX_HUE * (1 - (accuracy - mGoodAccuracy) / (mBadAccuracy - mGoodAccuracy)));
-        return Color.HSVToColor(alpha, new float[]{hue, saturation, 1});
-    }
-
-    public void zoomOnMyLocationIfNeeded() {
-        if (!isFirstLocation || mMap == null || mMyLastLocation == null) {
+    public void centerOnLocation(LocationInfo location, float zoom) {
+        if (mMap == null) {
             return;
         }
 
         mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(
-                LocationUtil.locationInfoToLatLng(mMyLastLocation), 15));
+                LocationUtil.locationInfoToLatLng(location), zoom));
+    }
+
+    public void drawPath(List<LocationInfo> points, int color) {
+        List<LatLng> latLngPoints = LocationUtil.locationInfoListToLatLngList(points);
+
+        if (mPathPolyline == null) {
+            mPathPolyline = mMap.addPolyline(new PolylineOptions()
+                    .endCap(new RoundCap())
+                    .startCap(new RoundCap())
+                    .zIndex(3)
+                    .width(UIUtil.dpToPx(mContext.getResources(), ACCURACY_CIRCLE_STROKE_WIDTH_DP))
+                    .color(color)
+                    .jointType(JointType.ROUND)
+                    .addAll(latLngPoints));
+        } else {
+            mPathPolyline.setPoints(latLngPoints);
+        }
+    }
+
+    public void drawArea(List<LocationInfo> points, int color) {
+        List<LatLng> latLngPoints = LocationUtil.locationInfoListToLatLngList(points);
+
+        if (mAreaPolygon == null) {
+            mAreaPolygon = mMap.addPolygon(new PolygonOptions()
+                    .zIndex(4)
+                    .strokeWidth(0)
+                    .fillColor(color)
+                    .addAll(latLngPoints));
+        } else {
+            mAreaPolygon.setPoints(latLngPoints);
+        }
+    }
+
+    public void clear() {
+        if (mMyLocationMarker != null) {
+            mMyLocationMarker.remove();
+            mMyLocationMarker = null;
+        }
+
+        if (mAccuracyCircle != null) {
+            mAccuracyCircle.remove();
+            mAccuracyCircle = null;
+        }
+
+        if (mPathPolyline != null) {
+            mPathPolyline.remove();
+            mPathPolyline = null;
+        }
+
+        if (mAreaPolygon != null) {
+            mAreaPolygon.remove();
+            mAreaPolygon = null;
+        }
     }
 }

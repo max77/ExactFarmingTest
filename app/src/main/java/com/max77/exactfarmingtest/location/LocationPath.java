@@ -1,9 +1,10 @@
 package com.max77.exactfarmingtest.location;
 
-import com.max77.exactfarmingtest.location.LocationInfo;
-import com.max77.exactfarmingtest.location.LocationUtil;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.maps.android.SphericalUtil;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -14,7 +15,7 @@ import java.util.List;
 
 public final class LocationPath {
     private double mPathClosureThreshold;
-    private int[] mIntersectionPointsIdx;
+    private int[] mClosedPartEndpointsIdx;
     private List<LocationInfo> mPoints = new ArrayList<>();
 
     public LocationPath(double pathClosureThreshold) {
@@ -25,15 +26,15 @@ public final class LocationPath {
     }
 
     public boolean isClosed() {
-        return mIntersectionPointsIdx != null &&
-                mIntersectionPointsIdx[0] == 0 &&
-                mIntersectionPointsIdx[1] == size() - 1;
+        return mClosedPartEndpointsIdx != null &&
+                mClosedPartEndpointsIdx[0] == 0 &&
+                mClosedPartEndpointsIdx[1] == size() - 1;
     }
 
     public boolean hasSelfIntersection() {
-        return mIntersectionPointsIdx != null &&
-                mIntersectionPointsIdx[0] > 0 &&
-                mIntersectionPointsIdx[1] < size() - 1;
+        return mClosedPartEndpointsIdx != null &&
+                mClosedPartEndpointsIdx[0] > 0 &&
+                mClosedPartEndpointsIdx[1] < size() - 1;
     }
 
     public List<LocationInfo> getAllPoints() {
@@ -41,9 +42,9 @@ public final class LocationPath {
     }
 
     public List<LocationInfo> getClosedPart() {
-        if (mIntersectionPointsIdx != null) {
-            return Collections.unmodifiableList(mPoints.subList(mIntersectionPointsIdx[0],
-                    mIntersectionPointsIdx[1] + 1));
+        if (mClosedPartEndpointsIdx != null) {
+            return Collections.unmodifiableList(mPoints.subList(mClosedPartEndpointsIdx[0],
+                    mClosedPartEndpointsIdx[1] + 1));
         } else {
             return Collections.unmodifiableList(new ArrayList<LocationInfo>());
         }
@@ -54,7 +55,7 @@ public final class LocationPath {
     }
 
     public void addPoint(LocationInfo newPoint) {
-        if (size() >= 3 && mIntersectionPointsIdx == null) {
+        if (size() >= 3 && mClosedPartEndpointsIdx == null) {
             LocationInfo lastPoint = mPoints.get(size() - 1);
             LocationInfo intersectionPoint = null;
 
@@ -77,27 +78,71 @@ public final class LocationPath {
                     newPoint = LocationInfo.of(startPoint)
                             .setTime(newPoint.getTime())
                             .setAccuracy(newPoint.getAccuracy());
-                    mIntersectionPointsIdx = new int[]{0, size()};
+                    mClosedPartEndpointsIdx = new int[]{0, size()};
                 }
             }
 
-            if (intersectionPoint != null && mIntersectionPointsIdx == null) {
+            if (intersectionPoint != null && mClosedPartEndpointsIdx == null) {
                 // add copies of the intersection point to the end of the path
                 // and between the endpoints of the intersected segment
                 mPoints.add(LocationInfo.of(intersectionPoint)
                         .setTime((lastPoint.getTime() + newPoint.getTime()) / 2));
                 mPoints.add(idx, LocationInfo.of(intersectionPoint)
                         .setTime((mPoints.get(idx - 1).getTime() + mPoints.get(idx).getTime()) / 2));
-                mIntersectionPointsIdx = new int[]{idx, size() - 1};
+                mClosedPartEndpointsIdx = new int[]{idx, size() - 1};
             }
         }
 
-        mPoints.add(newPoint);
+        mPoints.add(LocationInfo.of(newPoint));
+    }
+
+    public void forceClosing() {
+        addPoint(LocationInfo.of(mPoints.get(0)));
     }
 
     public void removeTailAfterIntersection() {
-        List<LocationInfo> newPoints = mPoints.subList(0, mIntersectionPointsIdx[1]);
+        List<LocationInfo> newPoints = mPoints.subList(0, mClosedPartEndpointsIdx[1]);
         mPoints = newPoints;
-        mIntersectionPointsIdx = null;
+        mClosedPartEndpointsIdx = null;
+    }
+
+    public static LocationPath of(LocationPath other) {
+        LocationPath path = new LocationPath(other.mPathClosureThreshold);
+        path.mClosedPartEndpointsIdx = Arrays.copyOf(other.mClosedPartEndpointsIdx, 2);
+        for (LocationInfo point : other.mPoints) {
+            path.mPoints.add(LocationInfo.of(point));
+        }
+
+        return path;
+    }
+
+    public double area() {
+        if (size() <= 3) {
+            return 0;
+        }
+
+        List<LatLng> latLngPoints = new ArrayList<>();
+        for (LocationInfo point : mPoints) {
+            latLngPoints.add(LocationUtil.locationInfoToLatLng(point));
+        }
+
+        return SphericalUtil.computeArea(latLngPoints);
+    }
+
+    public double length() {
+        if (size() < 2) {
+            return 0;
+        }
+
+        double len = 0;
+
+        LocationInfo previous = null;
+        for (LocationInfo point : mPoints) {
+            if (previous != null)
+                len += LocationUtil.distanceBetween(point, previous);
+            previous = point;
+        }
+
+        return len;
     }
 }

@@ -57,7 +57,7 @@ public final class GPSLocationTracker implements ILocationTracker {
             }
 
             public void onProviderDisabled(String provider) {
-                destroy();
+                stopTracking();
                 if (mListener != null) {
                     mListener.onLocationNotAvailable();
                 }
@@ -67,8 +67,6 @@ public final class GPSLocationTracker implements ILocationTracker {
 
     @Override
     public final void startTracking() throws SecurityException {
-        checkForBeingReused();
-
         if (isStarted) {
             return;
         }
@@ -90,9 +88,7 @@ public final class GPSLocationTracker implements ILocationTracker {
     }
 
     @Override
-    public final void destroy() {
-        checkForBeingReused();
-
+    public void stopTracking() {
         if (!isStarted) {
             return;
         }
@@ -108,10 +104,5 @@ public final class GPSLocationTracker implements ILocationTracker {
     @Override
     public void setListener(Listener listener) {
         mListener = listener;
-    }
-
-    private void checkForBeingReused() {
-        if (mLocationManager == null)
-            throw new IllegalStateException(getClass().getSimpleName() + " can not be reused!");
     }
 }

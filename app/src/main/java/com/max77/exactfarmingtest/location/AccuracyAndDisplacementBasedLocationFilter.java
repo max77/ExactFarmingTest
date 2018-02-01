@@ -21,7 +21,7 @@ public final class AccuracyAndDisplacementBasedLocationFilter implements ILocati
     }
 
     @Override
-    public boolean filter(LocationInfo location) {
+    public boolean isValidLocation(LocationInfo location) {
         if (location == null || location.getAccuracy() > mMaxAccuracy) {
             return false;
         }

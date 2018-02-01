@@ -8,7 +8,7 @@ package com.max77.exactfarmingtest.location;
 public interface ILocationTracker {
     void startTracking();
 
-    void destroy();
+    void stopTracking();
 
     void setListener(Listener listener);
 

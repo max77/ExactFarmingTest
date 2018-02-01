@@ -3,4 +3,17 @@
     <string name="title_activity_maps">Map</string>
     <string name="status_starting">Starting...</string>
     <string name="status_tracker_initialized">Tracker service ready...</string>
+    <string name="status_location_fixed">Location fixed. Ready for tracking...</string>
+    <string name="status_tracking">Tracking... tracked fo far: %1$.2f meters</string>
+    <string name="status_fixing_location">Waiting for location, acc = %1$.2fm</string>
+    <string name="status_fixing_location_no_location">Waiting for location...</string>
+    <string name="status_tracking_finished">Tracking complete! The area is %1$.2fsq.m</string>
+    <string name="status_location_not_available">Location not available!</string>
+    <string name="status_location_timed_out">Timed out receiving location!</string>
+    <string name="start">start</string>
+    <string name="accuracy">~%1$.0fm</string>
+    <string name="stop">stop</string>
+    <string name="finish">finish</string>
+    <string name="track">track</string>
+    <string name="restart">restart</string>
 </resources>
