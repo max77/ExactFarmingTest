@@ -200,6 +200,15 @@ public class AreaTracker implements IAreaTracker {
         updateStateAndReport(State.FINISHED);
     }
 
+    @Override
+    public void destroy() {
+        if (mLocationTracker != null) {
+            mLocationTracker.setListener(null);
+            mLocationTracker.stopTracking();
+            mLocationTracker = null;
+        }
+    }
+
     private void updateStateAndReport(State state) {
         mState = state;
         forceStateListenerForCurrentState();

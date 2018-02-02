@@ -1,19 +1,3 @@
-/**
- * Copyright 2017 Google Inc. All Rights Reserved.
- * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.max77.exactfarmingtest.service;
 
 import android.app.ActivityManager;
@@ -43,7 +27,6 @@ import com.max77.exactfarmingtest.tracker.IAreaTracker;
 import com.max77.exactfarmingtest.ui.MapsActivity;
 
 public class AreaTrackerService extends Service {
-
     public class LocalBinder extends Binder {
         public AreaTrackerService getService() {
             return AreaTrackerService.this;
@@ -52,12 +35,11 @@ public class AreaTrackerService extends Service {
 
     private static final String TAG = BuildConfig.TAG + AreaTrackerService.class.getSimpleName();
     private static final String CHANNEL_ID = "channel_01";
-    private static final String EXTRA_STARTED_FROM_NOTIFICATION =
-            AreaTrackerService.class.getName() + ".started_from_notification";
     private static final int NOTIFICATION_ID = 12345678;
 
     private final IBinder mBinder = new LocalBinder();
     private boolean isChangingConfiguration = false;
+    private boolean isShuttingDown = false;
     private NotificationManager mNotificationManager;
 
     private AreaTracker mAreaTracker;
@@ -112,7 +94,7 @@ public class AreaTrackerService extends Service {
     public boolean onUnbind(Intent intent) {
         Log.i(TAG, "onUnbind()");
 
-        if (!isChangingConfiguration) {
+        if (!isChangingConfiguration && !isShuttingDown) {
             goForeground();
         }
 
@@ -121,6 +103,10 @@ public class AreaTrackerService extends Service {
 
     @Override
     public void onDestroy() {
+        if (mAreaTracker != null) {
+            mAreaTracker.destroy();
+        }
+
         Log.i(TAG, "onDestroy()");
     }
 
@@ -131,13 +117,21 @@ public class AreaTrackerService extends Service {
         }
     }
 
+    public void shutdown() {
+        isShuttingDown = true;
+        stopForeground(true);
+        stopSelf();
+    }
+
     public AreaTracker getAreaTracker() {
         return mAreaTracker;
     }
 
     private Notification getNotification(String text, boolean sound) {
+        Intent mainIntent = new Intent(this, MapsActivity.class);
+
         PendingIntent activityPendingIntent = PendingIntent.getActivity(this, 0,
-                new Intent(this, MapsActivity.class), 0);
+                mainIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentIntent(activityPendingIntent)
@@ -214,7 +208,7 @@ public class AreaTrackerService extends Service {
 
         @Override
         public void isFinished(LocationPath currentPath) {
-            showNotification(getString(R.string.status_tracking_finished), true);
+            showNotification(getString(R.string.status_tracking_finished, currentPath.area()), true);
         }
 
         @Override

@@ -36,13 +36,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private AreaTrackerService mAreaTrackerService;
     private AreaTracker.StateListener mForegroundAreaTrackerStateListener;
 
-    private GoogleMap mMap;
     private MapHelper mMapHelper;
     private TextView tvStatus;
     private TextView tvAccuracy;
     private Button btnButton;
 
     private boolean isBound;
+    private boolean isFinishedByUser;
 
     private final ServiceConnection mServiceConnection = new ServiceConnection() {
         @Override
@@ -78,13 +78,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
-        mMap = googleMap;
-        mMapHelper = new MapHelper(this, mMap, TRACKER_REQUIRED_ACCURACY);
+        mMapHelper = new MapHelper(this, googleMap, TRACKER_REQUIRED_ACCURACY);
     }
 
     @Override
     protected void onStart() {
         super.onStart();
+        isFinishedByUser = false;
         checkPermissionsAndBindService();
     }
 
@@ -92,11 +92,23 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     protected void onStop() {
         if (isBound) {
             mAreaTrackerService.getAreaTracker().removeStateListener(mForegroundAreaTrackerStateListener);
-            unbindService(mServiceConnection);
+
+            if (isFinishedByUser) {
+                mAreaTrackerService.shutdown();
+            } else {
+                unbindService(mServiceConnection);
+            }
+
             isBound = false;
         }
 
         super.onStop();
+    }
+
+    @Override
+    public void onBackPressed() {
+        isFinishedByUser = true;
+        super.onBackPressed();
     }
 
     private void setupAreaTrackerService(boolean reset) {
@@ -174,7 +186,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 if (isFirstLocation) {
                     isFirstLocation = false;
 
-                    mMapHelper.centerOnLocation(currentLocation, 15);
+                    mMapHelper.centerOnLocation(currentLocation, currentLocation.getAccuracy());
                     showStatus(getString(R.string.status_fixing_location, currentLocation.getAccuracy()));
                 }
             }
@@ -185,6 +197,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         @Override
         public void isLocationFixed(LocationInfo currentLocation) {
+            mMapHelper.centerOnLocation(currentLocation, currentLocation.getAccuracy());
+            mMapHelper.showMyLocation(currentLocation);
             showAccuracy(currentLocation.getAccuracy());
             showStatus(getString(R.string.status_location_fixed));
             showButton(getString(R.string.track), getResources().getColor(R.color.color_button_track),
@@ -194,9 +208,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         @Override
         public void isTracking(LocationPath currentPath) {
             if (currentPath.size() > 0) {
-                List<LocationInfo> path = currentPath.getAllPoints();
-                mMapHelper.drawPath(path, getResources().getColor(R.color.color_path));
-                showAccuracy(path.get(path.size() - 1).getAccuracy());
+                showPath(currentPath);
             }
 
             showStatus(getString(R.string.status_tracking, currentPath.length()));
@@ -204,15 +216,28 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     v -> mAreaTrackerService.getAreaTracker().finishTracking());
         }
 
-        @Override
-        public void isFinished(LocationPath currentPath) {
+        private void showPath(LocationPath currentPath) {
             List<LocationInfo> path = currentPath.getAllPoints();
             mMapHelper.drawPath(path, getResources().getColor(R.color.color_path));
 
-            if (currentPath.isClosed())
-                mMapHelper.drawArea(path, getResources().getColor(R.color.color_area));
+            LocationInfo end = path.get(path.size() - 1);
+            showAccuracy(end.getAccuracy());
+            mMapHelper.showMyLocation(end);
 
-            showAccuracy(path.get(path.size() - 1).getAccuracy());
+            if (currentPath.size() > 1)
+                mMapHelper.centerOnPoints(currentPath.getAllPoints());
+        }
+
+        @Override
+        public void isFinished(LocationPath currentPath) {
+            if (currentPath.size() > 0) {
+                showPath(currentPath);
+
+                if (currentPath.isClosed())
+                    mMapHelper.drawArea(currentPath.getAllPoints(),
+                            getResources().getColor(R.color.color_area));
+            }
+
             showStatus(getString(R.string.status_tracking_finished, currentPath.area()));
             showButton(getString(R.string.restart), getResources().getColor(R.color.color_button_start),
                     v -> setupAreaTrackerService(true));

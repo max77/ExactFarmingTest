@@ -1,6 +1,7 @@
 package com.max77.exactfarmingtest.ui;
 
 import android.content.Context;
+import android.os.Handler;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -9,6 +10,7 @@ import com.google.android.gms.maps.model.Circle;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.JointType;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polygon;
@@ -16,6 +18,7 @@ import com.google.android.gms.maps.model.PolygonOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.gms.maps.model.RoundCap;
+import com.google.maps.android.SphericalUtil;
 import com.max77.exactfarmingtest.R;
 import com.max77.exactfarmingtest.location.LocationInfo;
 import com.max77.exactfarmingtest.location.LocationUtil;
@@ -29,6 +32,7 @@ import java.util.List;
 
 public class MapHelper {
     private static final float ACCURACY_CIRCLE_STROKE_WIDTH_DP = 3.0f;
+    private static final float MAP_PADDING_DP = 40.0f;
 
     private Context mContext;
     private GoogleMap mMap;
@@ -81,13 +85,34 @@ public class MapHelper {
                 0.5f));
     }
 
-    public void centerOnLocation(LocationInfo location, float zoom) {
+    public void centerOnLocation(LocationInfo location, double radius) {
         if (mMap == null) {
             return;
         }
 
-        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(
-                LocationUtil.locationInfoToLatLng(location), zoom));
+        LatLng center = LocationUtil.locationInfoToLatLng(location);
+        LatLngBounds bounds = new LatLngBounds.Builder()
+                .include(SphericalUtil.computeOffset(center, Math.sqrt(2) * radius, 45))
+                .include(SphericalUtil.computeOffset(center, Math.sqrt(2) * radius, -135))
+                .build();
+
+        new Handler().post(() -> mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds,
+                (int) UIUtil.dpToPx(mContext.getResources(), MAP_PADDING_DP))));
+    }
+
+    public void centerOnPoints(List<LocationInfo> points) {
+        if (mMap == null || points.isEmpty()) {
+            return;
+        }
+
+        LatLngBounds.Builder builder = new LatLngBounds.Builder();
+
+        for (LatLng latLng : LocationUtil.locationInfoListToLatLngList(points)) {
+            builder.include(latLng);
+        }
+
+        new Handler().post(() -> mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(builder.build(),
+                (int) UIUtil.dpToPx(mContext.getResources(), MAP_PADDING_DP))));
     }
 
     public void drawPath(List<LocationInfo> points, int color) {

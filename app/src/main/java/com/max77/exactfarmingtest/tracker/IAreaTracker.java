@@ -22,6 +22,8 @@ public interface IAreaTracker {
 
     void finishTracking();
 
+    void destroy();
+
     interface StateListener {
         void isInitialized();
 
