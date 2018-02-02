@@ -116,6 +116,7 @@ public class AreaTracker implements IAreaTracker {
 
         updateStateAndReportWithTimeout(State.WAITING_FOR_INITIAL_FIX);
 
+        mLocationFilter.reset();
         mLocationTracker.setListener(new ILocationTracker.Listener() {
             @Override
             public void onNewLocation(LocationInfo location) {
@@ -142,12 +143,13 @@ public class AreaTracker implements IAreaTracker {
 
     @Override
     public void startTracking() {
-        if (checkState(State.LOCATION_FIXED, State.LOCATION_TIMED_OUT)) {
+        if (!checkState(State.LOCATION_FIXED, State.LOCATION_TIMED_OUT)) {
             return;
         }
 
         updateStateAndReportWithTimeout(State.TRACKING);
 
+        mLocationFilter.reset();
         mLocationTracker.setListener(new ILocationTracker.Listener() {
             @Override
             public void onNewLocation(LocationInfo location) {

@@ -93,7 +93,6 @@ public final class FusedLocationTracker implements ILocationTracker {
         isStarted = false;
 
         mFusedLocationClient.removeLocationUpdates(mLocationCallback);
-        mFusedLocationClient = null;
         mListener = null;
 
         Log.i(TAG, "tracking stopped");

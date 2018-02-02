@@ -29,7 +29,7 @@ import java.util.List;
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
     private static final double TRACKER_REQUIRED_ACCURACY = 30;
-    private static final double TRACKER_MIN_DISPLACEMENT = 5;
+    private static final double TRACKER_MIN_DISPLACEMENT = 100;
     private static final long GPS_SAMPLING_PERIOD = 1000;
     private static final long LOCATION_TIMEOUT = 30000;
 
@@ -109,7 +109,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 new AccuracyAndDisplacementBasedLocationFilter(TRACKER_REQUIRED_ACCURACY,
                         TRACKER_MIN_DISPLACEMENT),
                 LOCATION_TIMEOUT,
-                TRACKER_MIN_DISPLACEMENT * 2,
+                TRACKER_MIN_DISPLACEMENT,
                 reset);
 
         mForegroundAreaTrackerStateListener = new ForegroundAreaTrackerAreaStateListener();
@@ -193,10 +193,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         @Override
         public void isTracking(LocationPath currentPath) {
-            List<LocationInfo> path = currentPath.getAllPoints();
-            mMapHelper.drawPath(path, getResources().getColor(R.color.color_path));
+            if (currentPath.size() > 0) {
+                List<LocationInfo> path = currentPath.getAllPoints();
+                mMapHelper.drawPath(path, getResources().getColor(R.color.color_path));
+                showAccuracy(path.get(path.size() - 1).getAccuracy());
+            }
 
-            showAccuracy(path.get(path.size() - 1).getAccuracy());
             showStatus(getString(R.string.status_tracking, currentPath.length()));
             showButton(getString(R.string.finish), getResources().getColor(R.color.color_button_finish),
                     v -> mAreaTrackerService.getAreaTracker().finishTracking());
@@ -214,7 +216,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
             showAccuracy(path.get(path.size() - 1).getAccuracy());
             showStatus(getString(R.string.status_tracking_finished, currentPath.area()));
-            showButton(getString(R.string.start), getResources().getColor(R.color.color_button_start),
+            showButton(getString(R.string.restart), getResources().getColor(R.color.color_button_start),
                     v -> setupAreaTrackerService(true));
         }
 

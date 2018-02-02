@@ -26,11 +26,16 @@ public final class AccuracyAndDisplacementBasedLocationFilter implements ILocati
             return false;
         }
 
-        if (mLastGoodLocation != null && LocationUtil.distanceBetween(mLastGoodLocation, location) > mMinDisplacement) {
+        if (mLastGoodLocation != null && LocationUtil.distanceBetween(mLastGoodLocation, location) < mMinDisplacement) {
             return false;
         }
 
         mLastGoodLocation = location;
         return true;
+    }
+
+    @Override
+    public void reset() {
+        mLastGoodLocation = null;
     }
 }

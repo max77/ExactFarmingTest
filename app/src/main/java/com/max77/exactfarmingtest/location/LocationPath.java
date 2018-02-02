@@ -108,7 +108,9 @@ public final class LocationPath {
 
     public static LocationPath of(LocationPath other) {
         LocationPath path = new LocationPath(other.mPathClosureThreshold);
-        path.mClosedPartEndpointsIdx = Arrays.copyOf(other.mClosedPartEndpointsIdx, 2);
+        if(other.mClosedPartEndpointsIdx != null) {
+            path.mClosedPartEndpointsIdx = Arrays.copyOf(other.mClosedPartEndpointsIdx, 2);
+        }
         for (LocationInfo point : other.mPoints) {
             path.mPoints.add(LocationInfo.of(point));
         }
