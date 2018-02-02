@@ -139,7 +139,7 @@ public class AreaTrackerService extends Service {
                 .setContentTitle(getString(R.string.app_name))
                 .setOngoing(true)
                 .setPriority(Notification.PRIORITY_HIGH)
-                .setSmallIcon(R.mipmap.ic_launcher)
+                .setSmallIcon(R.drawable.ic_notification)
                 .setWhen(System.currentTimeMillis());
 
         if (sound) {

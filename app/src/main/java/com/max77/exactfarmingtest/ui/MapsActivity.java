@@ -29,7 +29,7 @@ import java.util.List;
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
     private static final double TRACKER_REQUIRED_ACCURACY = 30;
-    private static final double TRACKER_MIN_DISPLACEMENT = 25;
+    private static final double TRACKER_MIN_DISPLACEMENT = 10;
     private static final long GPS_SAMPLING_PERIOD = 1000;
     private static final long LOCATION_TIMEOUT = 30000;
 
