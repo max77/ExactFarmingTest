@@ -29,7 +29,7 @@ import java.util.List;
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
     private static final double TRACKER_REQUIRED_ACCURACY = 30;
-    private static final double TRACKER_MIN_DISPLACEMENT = 100;
+    private static final double TRACKER_MIN_DISPLACEMENT = 25;
     private static final long GPS_SAMPLING_PERIOD = 1000;
     private static final long LOCATION_TIMEOUT = 30000;
 
@@ -109,7 +109,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 new AccuracyAndDisplacementBasedLocationFilter(TRACKER_REQUIRED_ACCURACY,
                         TRACKER_MIN_DISPLACEMENT),
                 LOCATION_TIMEOUT,
-                TRACKER_MIN_DISPLACEMENT,
+                TRACKER_MIN_DISPLACEMENT * 2,
                 reset);
 
         mForegroundAreaTrackerStateListener = new ForegroundAreaTrackerAreaStateListener();
@@ -209,10 +209,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             List<LocationInfo> path = currentPath.getAllPoints();
             mMapHelper.drawPath(path, getResources().getColor(R.color.color_path));
 
-            List<LocationInfo> closedPart = currentPath.getClosedPart();
-            mMapHelper.drawArea(closedPart, getResources().getColor(currentPath.hasSelfIntersection() ?
-                    R.color.color_area_warning :
-                    R.color.color_area));
+            if (currentPath.isClosed())
+                mMapHelper.drawArea(path, getResources().getColor(R.color.color_area));
 
             showAccuracy(path.get(path.size() - 1).getAccuracy());
             showStatus(getString(R.string.status_tracking_finished, currentPath.area()));

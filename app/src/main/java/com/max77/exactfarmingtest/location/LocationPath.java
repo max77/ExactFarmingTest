@@ -15,7 +15,7 @@ import java.util.List;
 
 public final class LocationPath {
     private double mPathClosureThreshold;
-    private int[] mClosedPartEndpointsIdx;
+    private int[] mLoopEndpointsIdx;
     private List<LocationInfo> mPoints = new ArrayList<>();
 
     public LocationPath(double pathClosureThreshold) {
@@ -26,25 +26,27 @@ public final class LocationPath {
     }
 
     public boolean isClosed() {
-        return mClosedPartEndpointsIdx != null &&
-                mClosedPartEndpointsIdx[0] == 0 &&
-                mClosedPartEndpointsIdx[1] == size() - 1;
+        return size() > 3 && arePointCloseEnough(mPoints.get(0), mPoints.get(size() - 1));
+    }
+
+    private boolean arePointCloseEnough(LocationInfo p1, LocationInfo p2) {
+        return LocationUtil.distanceBetween(p1, p2) < mPathClosureThreshold;
     }
 
     public boolean hasSelfIntersection() {
-        return mClosedPartEndpointsIdx != null &&
-                mClosedPartEndpointsIdx[0] > 0 &&
-                mClosedPartEndpointsIdx[1] < size() - 1;
+        return mLoopEndpointsIdx != null &&
+                mLoopEndpointsIdx[0] > 0 &&
+                mLoopEndpointsIdx[1] < size() - 1;
     }
 
     public List<LocationInfo> getAllPoints() {
         return Collections.unmodifiableList(mPoints);
     }
 
-    public List<LocationInfo> getClosedPart() {
-        if (mClosedPartEndpointsIdx != null) {
-            return Collections.unmodifiableList(mPoints.subList(mClosedPartEndpointsIdx[0],
-                    mClosedPartEndpointsIdx[1] + 1));
+    public List<LocationInfo> getLoop() {
+        if (mLoopEndpointsIdx != null) {
+            return Collections.unmodifiableList(mPoints.subList(mLoopEndpointsIdx[0],
+                    mLoopEndpointsIdx[1] + 1));
         } else {
             return Collections.unmodifiableList(new ArrayList<LocationInfo>());
         }
@@ -55,12 +57,24 @@ public final class LocationPath {
     }
 
     public void addPoint(LocationInfo newPoint) {
-        if (size() >= 3 && mClosedPartEndpointsIdx == null) {
+        if (size() >= 3 && mLoopEndpointsIdx == null) {
             LocationInfo lastPoint = mPoints.get(size() - 1);
             LocationInfo intersectionPoint = null;
 
+            // check path for closure
+            boolean isClosed = false;
+            LocationInfo startPoint = mPoints.get(0);
+
+            if (arePointCloseEnough(newPoint, startPoint)) {
+                // replace the new point coordinates with ones of the starting point of the path
+                newPoint = LocationInfo.of(startPoint)
+                        .setTime(newPoint.getTime())
+                        .setAccuracy(newPoint.getAccuracy());
+                isClosed = true;
+            }
+
             // check for path self-intersection
-            int idx = 0;
+            int idx = isClosed ? 1 : 0;    // won't check the 1st segment for closed path
             while (idx < size() - 2 && intersectionPoint == null) {
                 LocationInfo pointA = mPoints.get(idx);
                 LocationInfo pointB = mPoints.get(++idx);
@@ -69,27 +83,14 @@ public final class LocationPath {
                         LocationUtil.getIntersectionBetweenSegments(pointA, pointB, lastPoint, newPoint);
             }
 
-            if (intersectionPoint == null || idx == 1) {
-                // check for closure
-                LocationInfo startPoint = mPoints.get(0);
-                if (LocationUtil.distanceBetween(newPoint, startPoint) <
-                        mPathClosureThreshold) {
-                    // replace the new point coordinates with ones of the starting point of the path
-                    newPoint = LocationInfo.of(startPoint)
-                            .setTime(newPoint.getTime())
-                            .setAccuracy(newPoint.getAccuracy());
-                    mClosedPartEndpointsIdx = new int[]{0, size()};
-                }
-            }
-
-            if (intersectionPoint != null && mClosedPartEndpointsIdx == null) {
+            if (intersectionPoint != null) {
                 // add copies of the intersection point to the end of the path
                 // and between the endpoints of the intersected segment
                 mPoints.add(LocationInfo.of(intersectionPoint)
                         .setTime((lastPoint.getTime() + newPoint.getTime()) / 2));
                 mPoints.add(idx, LocationInfo.of(intersectionPoint)
                         .setTime((mPoints.get(idx - 1).getTime() + mPoints.get(idx).getTime()) / 2));
-                mClosedPartEndpointsIdx = new int[]{idx, size() - 1};
+                mLoopEndpointsIdx = new int[]{idx, size() - 1};
             }
         }
 
@@ -101,15 +102,24 @@ public final class LocationPath {
     }
 
     public void removeTailAfterIntersection() {
-        List<LocationInfo> newPoints = mPoints.subList(0, mClosedPartEndpointsIdx[1]);
+        List<LocationInfo> newPoints = mPoints.subList(0, mLoopEndpointsIdx[1]);
         mPoints = newPoints;
-        mClosedPartEndpointsIdx = null;
+        mLoopEndpointsIdx = null;
+    }
+
+    public void removeLoop() {
+        if (mLoopEndpointsIdx != null) {
+            List<LocationInfo> newPoints = mPoints.subList(0, mLoopEndpointsIdx[0]);
+            newPoints.addAll(mPoints.subList(mLoopEndpointsIdx[1], size()));
+            mPoints = newPoints;
+            mLoopEndpointsIdx = null;
+        }
     }
 
     public static LocationPath of(LocationPath other) {
         LocationPath path = new LocationPath(other.mPathClosureThreshold);
-        if(other.mClosedPartEndpointsIdx != null) {
-            path.mClosedPartEndpointsIdx = Arrays.copyOf(other.mClosedPartEndpointsIdx, 2);
+        if (other.mLoopEndpointsIdx != null) {
+            path.mLoopEndpointsIdx = Arrays.copyOf(other.mLoopEndpointsIdx, 2);
         }
         for (LocationInfo point : other.mPoints) {
             path.mPoints.add(LocationInfo.of(point));

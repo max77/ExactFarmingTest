@@ -159,7 +159,11 @@ public class AreaTracker implements IAreaTracker {
 
                     Log.i(TAG, "new location added to path: " + mCurrentLocation);
 
-                    if (mCurrentPath.hasSelfIntersection() || mCurrentPath.isClosed()) {
+                    if (mCurrentPath.hasSelfIntersection()) {
+                        mCurrentPath.removeLoop();
+                    }
+
+                    if (mCurrentPath.isClosed()) {
                         finishTracking();
                     } else {
                         updateStateAndReportWithTimeout(State.TRACKING);
@@ -183,11 +187,14 @@ public class AreaTracker implements IAreaTracker {
         mLocationTracker.stopTracking();
 
         // forced finishing
-        if (!(mCurrentPath.isClosed() || mCurrentPath.hasSelfIntersection())) {
+        if (!mCurrentPath.isClosed()) {
             mCurrentPath.forceClosing();
+            if (mCurrentPath.hasSelfIntersection()) {
+                mCurrentPath.removeLoop();
+            }
             Log.i(TAG, "tracking finished (forced path closing)");
         } else {
-            Log.i(TAG, "tracking finished (" + (mCurrentPath.isClosed() ? "closed)" : "self intersection)"));
+            Log.i(TAG, "tracking finished (closed)");
         }
 
         updateStateAndReport(State.FINISHED);

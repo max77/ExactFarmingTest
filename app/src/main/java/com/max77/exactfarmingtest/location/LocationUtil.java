@@ -60,7 +60,7 @@ public final class LocationUtil {
         if (ua >= 0.0f && ua <= 1.0f && ub >= 0.0f && ub <= 1.0f) {
             return new LocationInfo()
                     .setLatitude(x1 + ua * (x2 - x1))
-                    .setLongitude(y1 + ub * (y2 - y1));
+                    .setLongitude(y1 + ua * (y2 - y1));
         }
 
         return null;

@@ -30,14 +30,14 @@ public class LocationPathTest {
         assertEquals(path.size(), 0);
         assertFalse(path.hasSelfIntersection());
         assertFalse(path.isClosed());
-        assertTrue(path.getClosedPart().isEmpty());
+        assertTrue(path.getLoop().isEmpty());
         assertTrue(path.getAllPoints().isEmpty());
 
         path.addPoint(LocationInfo.of(0, 0));
         assertEquals(path.size(), 1);
         assertFalse(path.hasSelfIntersection());
         assertFalse(path.isClosed());
-        assertTrue(path.getClosedPart().isEmpty());
+        assertTrue(path.getLoop().isEmpty());
         assertFalse(path.getAllPoints().isEmpty());
 
         path.addPoint(LocationInfo.of(1, 0));
@@ -46,7 +46,7 @@ public class LocationPathTest {
         assertEquals(path.size(), 3);
         assertFalse(path.hasSelfIntersection());
         assertFalse(path.isClosed());
-        assertTrue(path.getClosedPart().isEmpty());
+        assertTrue(path.getLoop().isEmpty());
         assertFalse(path.getAllPoints().isEmpty());
     }
 
@@ -60,7 +60,7 @@ public class LocationPathTest {
         assertEquals(path.size(), 10);
         assertFalse(path.hasSelfIntersection());
         assertFalse(path.isClosed());
-        assertTrue(path.getClosedPart().isEmpty());
+        assertTrue(path.getLoop().isEmpty());
         assertFalse(path.getAllPoints().isEmpty());
     }
 
@@ -77,12 +77,12 @@ public class LocationPathTest {
         assertEquals(path.size(), 5);
         assertFalse(path.hasSelfIntersection());
         assertTrue(path.isClosed());
-        assertFalse(path.getClosedPart().isEmpty());
+        assertFalse(path.getLoop().isEmpty());
         assertFalse(path.getAllPoints().isEmpty());
         List<LocationInfo> allPoints = path.getAllPoints();
         assertEquals(allPoints.get(0).getLatitude(), allPoints.get(path.size() - 1).getLatitude(), 0);
         assertEquals(allPoints.get(0).getLongitude(), allPoints.get(path.size() - 1).getLongitude(), 0);
-        assertEquals(path.getClosedPart().get(4).getTime(), 5);
+        assertEquals(path.getLoop().get(4).getTime(), 5);
     }
 
     @Test
@@ -97,7 +97,7 @@ public class LocationPathTest {
         assertEquals(path.size(), 6);
         assertTrue(path.hasSelfIntersection());
         assertFalse(path.isClosed());
-        List<LocationInfo> closedPart = path.getClosedPart();
+        List<LocationInfo> closedPart = path.getLoop();
         assertEquals(closedPart.size(), 4);
         assertLatLonTime(closedPart.get(0), 1, 0, 15);
         assertLatLonTime(closedPart.get(1), 2, 0, 20);
